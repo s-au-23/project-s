@@ -5,3 +5,4 @@ pypdf
 reportlab
 gunicorn
 flask-sqlalchemy
+flask-login
