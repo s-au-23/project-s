@@ -6,6 +6,7 @@
     <title>Health AI - Project G</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body class="bg-slate-50 min-h-screen font-sans">
@@ -50,9 +51,23 @@
 
                 <div id="result" class="hidden bg-white p-8 rounded-3xl shadow-sm border border-blue-100">
                     <div class="flex justify-between items-center mb-4 border-b pb-4">
-                        <h3 class="font-bold text-blue-600">AI Analysis Result</h3>
-                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">Score: <span
-                                id="resScore">0</span>/10</span>
+                        <div>
+                            <h3 class="font-bold text-blue-600">AI Analysis Result</h3>
+                            <span class="text-xs text-gray-400">Project-G Health Report</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="shareToWhatsApp()"
+                                class="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-600 transition-all flex items-center gap-2">
+                                Share on WhatsApp
+                            </button>
+                            <button onclick="downloadPDF()"
+                                class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-700 transition-all">
+                                Download PDF
+                            </button>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">
+                                Score: <span id="resScore">0</span>/10
+                            </span>
+                        </div>
                     </div>
                     <p id="resText" class="text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
                 </div>
@@ -129,6 +144,7 @@
             const data = await res.json();
             currentHistory = data;
 
+
             if (data.length > 0) {
                 const ctx = document.getElementById('chart').getContext('2d');
                 if (myChart) myChart.destroy();
@@ -146,11 +162,15 @@
                     <span class="block font-bold text-slate-500">${r.date}</span>
                     <b class="text-blue-600">Score: ${r.score}/10</b>
                 </div>
-                <button onclick="viewReport(${index})" class="bg-blue-600 text-white px-3 py-1 rounded-lg">
-                    View
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="viewReport(${index})" class="bg-blue-600 text-white px-2 py-1 rounded-lg">View</button>
+                    <button onclick="deleteReport(${r.id})" class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-700">
+                        Delete
+                 </button>
+               </div>
             </div>`).join('');
             }
+
         }
         async function logout() { await fetch('/logout'); window.location.reload(); }
         function viewReport(index) {
@@ -167,6 +187,30 @@
 
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        async function shareToWhatsApp() {
+            const reportText = document.getElementById('resText').innerText;
+            const score = document.getElementById('resScore').innerText;
+            const shareMessage = `*Health AI Analysis Report*\n*Score:* ${score}/10\n\n${reportText}`;
+
+            // Check if the browser supports native file sharing (Mobile/Modern browsers)
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Health AI Report',
+                        text: shareMessage,
+                        // Note: To share the actual PDF file, the user must download it first 
+                        // because browsers can't generate and "send" a file in one click without a server.
+                    });
+                    console.log('Shared successfully');
+                } catch (err) {
+                    console.log('Error sharing:', err);
+                }
+            } else {
+                // Fallback: Open WhatsApp Web with the text message
+                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
+                window.open(whatsappUrl, '_blank');
+            }
         }
     </script>
 </body>

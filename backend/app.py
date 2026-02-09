@@ -135,6 +135,18 @@ def history():
 def logout():
     logout_user()
     return jsonify({"message": "Logged out"}), 200
+@app.route('/delete/<int:report_id>', methods=['DELETE'])
+@login_required
+def delete_report(report_id):
+    # Find the report that belongs to the current user
+    report = Report.query.filter_by(id=report_id, user_id=current_user.id).first()
+    
+    if not report:
+        return jsonify({"error": "Report not found"}), 404
+
+    db.session.delete(report)
+    db.session.commit()
+    return jsonify({"message": "Deleted successfully"}), 200
 
 if __name__ == '__main__':
     with app.app_context():
