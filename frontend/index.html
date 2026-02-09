@@ -122,10 +122,13 @@
                 btn.disabled = false; btn.innerText = "Analyze with OpenAI";
             }
         }
+        let currentHistory = [];
 
         async function getHistory() {
             const res = await fetch('/history');
             const data = await res.json();
+            currentHistory = data;
+
             if (data.length > 0) {
                 const ctx = document.getElementById('chart').getContext('2d');
                 if (myChart) myChart.destroy();
@@ -136,21 +139,35 @@
                         datasets: [{ label: 'Score', data: data.map(r => r.score).reverse(), borderColor: '#2563eb' }]
                     }
                 });
-                document.getElementById('historyList').innerHTML = data.slice(0, 3).map(r => `
-                    <div class="p-3 bg-slate-50 rounded-xl text-xs border flex justify-between">
-                        <span>${r.date}</span><b>Score: ${r.score}/10</b>
-                    </div>`).join('');
+
+                document.getElementById('historyList').innerHTML = data.map((r, index) => `
+            <div class="p-3 bg-slate-50 rounded-xl text-xs border flex justify-between items-center hover:bg-blue-50">
+                <div>
+                    <span class="block font-bold text-slate-500">${r.date}</span>
+                    <b class="text-blue-600">Score: ${r.score}/10</b>
+                </div>
+                <button onclick="viewReport(${index})" class="bg-blue-600 text-white px-3 py-1 rounded-lg">
+                    View
+                </button>
+            </div>`).join('');
             }
         }
-
-        function resetDashboard() {
-            document.getElementById('file').value = "";
-            document.getElementById('result').classList.add('hidden');
-            document.getElementById('resText').innerText = "";
-            document.getElementById('resScore').innerText = "0";
-        }
-
         async function logout() { await fetch('/logout'); window.location.reload(); }
+        function viewReport(index) {
+            const report = currentHistory[index];
+            if (!report) return;
+
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden');
+
+
+            document.getElementById('resText').innerText = report.summary;
+            document.getElementById('resScore').innerText = report.score;
+
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     </script>
 </body>
 
