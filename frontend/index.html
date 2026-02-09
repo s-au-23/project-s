@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Health AI - OpenAI Edition</title>
+    <title>Health AI - Project G</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -43,11 +43,13 @@
                     <button onclick="analyze()" id="upBtn"
                         class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700">Analyze
                         with OpenAI</button>
+                    <button onclick="resetDashboard()"
+                        class="w-full mt-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl hover:bg-gray-300">Reset
+                        Dashboard</button>
                 </div>
 
-                <div id="result"
-                    class="hidden bg-white p-8 rounded-3xl shadow-sm border border-blue-100 animate-fade-in">
-                    <div class="flex justify-between items-center mb-4">
+                <div id="result" class="hidden bg-white p-8 rounded-3xl shadow-sm border border-blue-100">
+                    <div class="flex justify-between items-center mb-4 border-b pb-4">
                         <h3 class="font-bold text-blue-600">AI Analysis Result</h3>
                         <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">Score: <span
                                 id="resScore">0</span>/10</span>
@@ -70,11 +72,12 @@
 
         window.onload = () => {
             const name = "{{ name }}";
-            (name && name !== "None") ? showDash() : showAuth();
+            (name && name !== "None" && name !== "") ? showDash() : showAuth();
         };
 
         function showAuth() { document.getElementById('authSection').classList.remove('hidden'); }
         function showDash() { document.getElementById('dashSection').classList.remove('hidden'); getHistory(); }
+
         function toggleAuth() {
             isLogin = !isLogin;
             document.getElementById('authTitle').innerText = isLogin ? "Login" : "Register";
@@ -87,30 +90,37 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: u, password: p })
             });
-            const data = await res.json();
-            if (res.ok) {
-                if (!isLogin) { alert("Registered!"); toggleAuth(); }
-                else window.location.reload();
-            } else alert(data.error);
+            if (res.ok) window.location.reload(); else alert("Auth Failed");
         }
 
         async function analyze() {
-            const file = document.getElementById('file').files[0];
-            if (!file) return alert("Select PDF");
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files[0]) return alert("Select PDF");
+
             const btn = document.getElementById('upBtn');
-            btn.disabled = true; btn.innerText = "GPT is thinking...";
+            btn.disabled = true; btn.innerText = "Processing...";
 
-            const fd = new FormData(); fd.append('file', file);
-            const res = await fetch('/upload', { method: 'POST', body: fd });
-            const data = await res.json();
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
 
-            if (res.ok) {
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('resText').innerText = data.analysis;
-                document.getElementById('resScore').innerText = data.score;
-                getHistory();
-            } else alert(data.error);
-            btn.disabled = false; btn.innerText = "Analyze with OpenAI";
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: fd });
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('resText').innerText = data.analysis;
+                    document.getElementById('resScore').innerText = data.score;
+                    getHistory();
+                } else {
+                    alert(data.error || "Upload failed");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server error");
+            } finally {
+                btn.disabled = false; btn.innerText = "Analyze with OpenAI";
+            }
         }
 
         async function getHistory() {
@@ -122,16 +132,22 @@
                 myChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: data.reverse().map(r => r.date),
-                        datasets: [{ label: 'Score', data: data.map(r => r.score), borderColor: '#2563eb', tension: 0.4 }]
+                        labels: data.map(r => r.date).reverse(),
+                        datasets: [{ label: 'Score', data: data.map(r => r.score).reverse(), borderColor: '#2563eb' }]
                     }
                 });
-                document.getElementById('historyList').innerHTML = data.reverse().slice(0, 3).map(r => `
-                    <div class="p-3 bg-slate-50 rounded-xl text-xs border border-slate-100 flex justify-between">
+                document.getElementById('historyList').innerHTML = data.slice(0, 3).map(r => `
+                    <div class="p-3 bg-slate-50 rounded-xl text-xs border flex justify-between">
                         <span>${r.date}</span><b>Score: ${r.score}/10</b>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             }
+        }
+
+        function resetDashboard() {
+            document.getElementById('file').value = "";
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('resText').innerText = "";
+            document.getElementById('resScore').innerText = "0";
         }
 
         async function logout() { await fetch('/logout'); window.location.reload(); }
