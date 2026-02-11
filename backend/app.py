@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from openai import OpenAI
 import base64 
 import PyPDF2
+import io
 
 # Fix: Use dynamic path to locate the frontend folder relative to this script
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -23,13 +24,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # OpenRouter Setup
-# Redirects standard OpenAI calls to OpenRouter's infrastructure
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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",
+    api_key="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",
     default_headers={
-        "HTTP-Referer": "http://localhost:5000", # Required by some OpenRouter models
-        "X-Title": "Project-G Health AI",        # Your App Name for OpenRouter rankings
+        "HTTP-Referer": "http://localhost:5000",
+        "X-Title": "Project-G Health AI",
     }
 )
 
@@ -59,7 +59,6 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
-    # Pass authenticated username to the template
     name = current_user.username if current_user.is_authenticated else None
     return render_template('index.html', name=name)
 
@@ -84,7 +83,6 @@ def login():
         return jsonify({"message": "Logged in successfully"}), 200
     return jsonify({"error": "Invalid credentials"}), 401
 
-
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
@@ -94,81 +92,108 @@ def upload():
     file = request.files['file']
     filename = file.filename.lower()
     
-    # Check file type
     is_image = filename.endswith(('.png', '.jpg', '.jpeg'))
+    is_pdf = filename.endswith('.pdf')
+
+    if not (is_image or is_pdf):
+        return jsonify({"error": "Only PDF or Images are allowed"}), 400
     
     try:
+        analysis = ""
+        # Default score if AI doesn't return one clearly
+        score = 7 
+
         if is_image:
-            # Read and encode image to base64
+            # --- IMAGE PROCESSING ---
             image_content = file.read()
             image_base64 = base64.b64encode(image_content).decode('utf-8')
             
-            # Using a more common model ID for Vision
             response = client.chat.completions.create(
-                model="google/gemini-2.0-flash-001", # Updated Model ID
+                model="google/gemini-2.0-flash-001",
                 messages=[{
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze this medical report image. Give a summary and a health score (1-10)."},
+                        {"type": "text", "text": "Analyze this medical report image. Provide a detailed summary and a health score from 1 to 10 based on the results."},
                         {"type": "image_url", "image_url": {"url": f"data:{file.content_type};base64,{image_base64}"}}
                     ]
                 }]
             )
+            analysis = response.choices[0].message.content
         else:
-            # --- Your existing PDF logic here ---
-            # Make sure to reset file pointer if you read it earlier: file.seek(0)
-            return jsonify({"error": "PDF logic needs to be integrated"}), 400
+            # --- PDF PROCESSING ---
+            pdf_reader = PyPDF2.PdfReader(file)
+            text_content = ""
+            for page in pdf_reader.pages:
+                text_content += page.extract_text()
+            
+            if not text_content.strip():
+                return jsonify({"error": "PDF is empty or non-readable text"}), 400
 
-        # Parsing the AI response
-        analysis = response.choices[0].message.content
-        # Simple logic to find a number in the text for the score
-        score = 7 # Default score if parsing fails
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=[
+                    {"role": "system", "content": "You are a medical assistant. Analyze the report text. Provide a summary and a health score from 1 to 10."},
+                    {"role": "user", "content": text_content}
+                ]
+            )
+            analysis = response.choices[0].message.content
+
+        # Simple Logic to extract score from AI text (looking for a digit 1-10)
+        score_match = re.search(r'Score:\s*(\d+)', analysis)
+        if score_match:
+            score = int(score_match.group(1))
         
-        # Save to database (Assuming your DB logic is here)
-        # new_report = Report(user_id=current_user.id, analysis=analysis, score=score...)
+        # --- SAVE TO DATABASE ---
+        new_report = Report(
+            user_id=current_user.id,
+            summary=analysis,
+            score=score,
+            date=datetime.now().strftime("%Y-%m-%d %H:%M")
+        )
+        db.session.add(new_report)
+        db.session.commit()
         
         return jsonify({"analysis": analysis, "score": score})
 
     except Exception as e:
-        print(f"Error: {e}") # This will show in your terminal
+        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
-    # Extract analysis and score from response as you did before
+
 @app.route('/history')
 @login_required
 def history():
-    # Fetch all reports belonging to the current user
-    reports = Report.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{"score": r.score, "summary": r.summary, "date": r.date} for r in reports])
+    # Fetch reports and return ID for deletion purpose
+    reports = Report.query.filter_by(user_id=current_user.id).order_by(Report.id.desc()).all()
+    return jsonify([{"id": r.id, "score": r.score, "summary": r.summary, "date": r.date} for r in reports])
 
 @app.route('/logout')
 def logout():
     logout_user()
     return jsonify({"message": "Logged out"}), 200
+
 @app.route('/delete/<int:report_id>', methods=['DELETE'])
 @login_required
 def delete_report(report_id):
-    # Find the report that belongs to the current user
     report = Report.query.filter_by(id=report_id, user_id=current_user.id).first()
-    
     if not report:
         return jsonify({"error": "Report not found"}), 404
 
     db.session.delete(report)
     db.session.commit()
     return jsonify({"message": "Deleted successfully"}), 200
-# Add this route to your app.py
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
     data = request.json
     user_query = data.get('query')
-    report_context = data.get('context') # This sends the current report text to AI
+    report_context = data.get('context')
 
     try:
         response = client.chat.completions.create(
             model="google/gemini-2.0-flash-001",
             messages=[
-                {"role": "system", "content": f"You are a medical assistant. Use this report context to answer user questions: {report_context}"},
+                {"role": "system", "content": f"You are a medical assistant. Context: {report_context}"},
                 {"role": "user", "content": user_query}
             ]
         )
@@ -179,5 +204,5 @@ def chat():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all() # Create database tables if they don't exist
+        db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
