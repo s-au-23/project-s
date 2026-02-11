@@ -4,25 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Health AI - Project G</title>
+    <title>Project-G Health AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #3b82f6;
             border-radius: 10px;
-        }
-
-        .dark ::-webkit-scrollbar-thumb {
-            background: #475569;
         }
     </style>
 </head>
@@ -30,8 +24,10 @@
 <body class="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans transition-colors duration-300">
 
     <div id="authSection" class="hidden min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm border dark:border-slate-700">
-            <h2 id="authTitle" class="text-3xl font-black text-blue-600 text-center mb-6">Welcome</h2>
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md border dark:border-slate-700">
+            <h2 id="authTitle" class="text-4xl font-black text-blue-600 text-center mb-8 tracking-tighter">PROJECT-G
+            </h2>
             <div class="space-y-4">
                 <input type="text" id="user" placeholder="Username"
                     class="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600">
@@ -41,8 +37,8 @@
                     class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transform active:scale-95 transition-all">Continue</button>
             </div>
             <p onclick="toggleAuth()" id="toggle"
-                class="mt-6 text-center text-sm text-blue-500 cursor-pointer hover:underline">Need an account? Register
-            </p>
+                class="mt-6 text-center text-sm text-blue-500 cursor-pointer hover:underline font-medium">Need an
+                account? Register</p>
         </div>
     </div>
 
@@ -50,14 +46,13 @@
         <nav
             class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b dark:border-slate-700 p-4 sticky top-0 z-50">
             <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
-                <h1 class="text-2xl font-black tracking-tighter text-blue-600">PROJECT-G</h1>
-                <div class="flex items-center gap-6">
-                    <button onclick="toggleDarkMode()"
-                        class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-xl transition-all hover:rotate-12">
+                <h1 class="text-2xl font-black text-blue-600 tracking-tighter">PROJECT-G</h1>
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-xl">
                         <span id="darkIcon">🌙</span>
                     </button>
-                    <div class="hidden md:block text-right">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Patient</p>
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs text-slate-400 font-bold uppercase">Patient</p>
                         <p class="text-slate-700 dark:text-white font-bold leading-none">{{ name }}</p>
                     </div>
                     <button onclick="logout()"
@@ -68,90 +63,86 @@
 
         <main class="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            <div class="lg:col-span-8 space-y-8">
+            <div class="lg:col-span-8 space-y-6">
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border dark:border-slate-700">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                            {{ name[0] | upper if name else 'U' }}
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-slate-800 dark:text-white leading-tight">What's happening?</h3>
+                            <p class="text-xs text-slate-400">Share your AI health creation or daily goals</p>
+                        </div>
+                    </div>
+                    <textarea id="shareInput" rows="2"
+                        placeholder="Analyze your report first, then share your AI insight here..."
+                        class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-white text-sm resize-none transition-all"></textarea>
+                    <div class="flex justify-end mt-3">
+                        <button onclick="publishPost()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all transform active:scale-95">Post
+                            Creation</button>
+                    </div>
+                </div>
 
                 <div
                     class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border dark:border-slate-700 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <svg width="100" height="100" fill="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                        </svg>
-                    </div>
                     <h2 class="text-xl font-bold mb-2 dark:text-white">New Health Analysis</h2>
-                    <p class="text-slate-400 text-sm mb-6">Upload your laboratory PDF report for AI processing.</p>
-
+                    <p class="text-slate-400 text-sm mb-6">Upload Lab PDF or Image (JPG/PNG)</p>
                     <input type="file" id="file" accept=".pdf, .png, .jpg, .jpeg"
                         class="mb-6 block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
-
-                    <div class="flex flex-col md:flex-row gap-3">
+                    <div class="flex gap-3">
                         <button onclick="analyze()" id="upBtn"
-                            class="flex-1 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-blue-200 dark:shadow-none shadow-lg hover:bg-blue-700 transition-all">Start
+                            class="flex-1 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all">Start
                             AI Analysis</button>
-                        <button onclick="resetDashboard()"
-                            class="px-8 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all">Clear</button>
                     </div>
                 </div>
 
                 <div id="result" class="hidden space-y-6">
                     <div
-                        class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-blue-100 dark:border-slate-700 transition-all">
+                        class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-blue-100 dark:border-slate-700">
                         <div
-                            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b dark:border-slate-700 pb-6">
+                            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b dark:border-slate-700">
                             <div>
-                                <h3 class="text-2xl font-bold text-slate-800 dark:text-white">Analysis Report</h3>
-                                <p class="text-sm text-slate-400">Generated by Project-G Engine</p>
+                                <h3 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">AI Report
+                                    Summary</h3>
+                                <p class="text-sm text-slate-400">Project-G Vision Engine 2.0</p>
                             </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button onclick="shareToWhatsApp()"
-                                    class="bg-[#25D366] text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:scale-105 transition-all">WhatsApp</button>
+                            <div class="flex gap-2">
                                 <button onclick="downloadPDF()"
-                                    class="bg-slate-800 dark:bg-white dark:text-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:scale-105 transition-all">Save
+                                    class="bg-slate-800 dark:bg-white dark:text-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">Save
                                     PDF</button>
-                                <div class="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-black text-xs">Score:
-                                    <span id="resScore">0</span>/10
-                                </div>
+                                <div
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-xs flex items-center">
+                                    Score: <span id="resScore" class="ml-1">0</span>/10</div>
                             </div>
                         </div>
                         <div id="resText"
-                            class="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed prose dark:prose-invert max-w-none">
-                        </div>
-                    </div>
+                            class="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed"></div>
 
-                    <div id="chatSection" class="hidden bg-blue-600 p-1 rounded-[2rem] shadow-xl">
-                        <div class="bg-white dark:bg-slate-800 rounded-[1.9rem] p-6">
-                            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                                <span class="bg-blue-100 p-2 rounded-lg">🤖</span> AI Health Assistant
-                            </h3>
+                        <div id="chatSection" class="hidden mt-8 pt-8 border-t dark:border-slate-700">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">🤖 Ask
+                                Assistant</h4>
                             <div id="chatBox"
-                                class="h-64 overflow-y-auto mb-4 space-y-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border dark:border-slate-700 shadow-inner">
-                                <div
-                                    class="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none border dark:border-slate-700 text-sm shadow-sm max-w-[80%]">
-                                    Hello! I've analyzed your report. Do you have any specific questions about the
-                                    results?
-                                </div>
+                                class="h-48 overflow-y-auto mb-4 space-y-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-700">
                             </div>
-                            <div class="flex gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl">
-                                <input type="text" id="chatInput" placeholder="Ask me anything..."
-                                    class="flex-1 bg-transparent p-4 text-sm dark:text-white outline-none">
+                            <div class="flex gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
+                                <input type="text" id="chatInput" placeholder="Ask about your report..."
+                                    class="flex-1 bg-transparent p-3 text-sm dark:text-white outline-none">
                                 <button onclick="askAI()"
-                                    class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all">Send</button>
+                                    class="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold text-sm">Send</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-4 space-y-8">
+            <div class="lg:col-span-4 space-y-6">
                 <div
                     class="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border dark:border-slate-700 sticky top-24">
-                    <h3 class="font-bold text-slate-800 dark:text-white mb-6 flex justify-between items-center">
-                        History
-                        <span
-                            class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md text-slate-400">LAST
-                            10 REPORTS</span>
-                    </h3>
-                    <div class="h-48 mb-6">
+                    <h3 class="font-bold text-slate-800 dark:text-white mb-6">Health Analytics</h3>
+                    <div class="h-40 mb-6">
                         <canvas id="chart"></canvas>
                     </div>
                     <div id="historyList" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -166,21 +157,18 @@
         let myChart = null;
         let currentHistory = [];
 
-        // App Initialization
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-
+        // App State Manager
         window.onload = () => {
+            if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
             const name = "{{ name }}";
-            if (localStorage.getItem('theme') === 'dark') document.getElementById('darkIcon').innerText = "☀️";
             (name && name !== "None" && name !== "") ? showDash() : showAuth();
         };
 
         function showAuth() { document.getElementById('authSection').classList.remove('hidden'); }
         function showDash() { document.getElementById('dashSection').classList.remove('hidden'); getHistory(); }
-
         function toggleAuth() {
             isLogin = !isLogin;
-            document.getElementById('authTitle').innerText = isLogin ? "Login" : "Register";
+            document.getElementById('authTitle').innerText = isLogin ? "PROJECT-G" : "JOIN PROJECT-G";
             document.getElementById('toggle').innerText = isLogin ? "Need an account? Register" : "Have an account? Login";
         }
 
@@ -190,158 +178,102 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: u, password: p })
             });
-            if (res.ok) window.location.reload(); else alert("Authentication Failed");
+            if (res.ok) window.location.reload(); else alert("Error in Credentials");
         }
 
         async function analyze() {
             const fileInput = document.getElementById('file');
-            if (!fileInput.files[0]) return alert("Please select a PDF file.");
+            if (!fileInput.files[0]) return alert("Select a PDF or Image!");
 
             const btn = document.getElementById('upBtn');
-            btn.disabled = true; btn.innerHTML = '<span class="animate-pulse">Processing Report...</span>';
+            btn.disabled = true; btn.innerText = "Processing...";
 
             const fd = new FormData();
             fd.append('file', fileInput.files[0]);
 
             try {
-                const response = await fetch('/upload', { method: 'POST', body: fd });
-                const data = await response.json();
-                if (response.ok) {
-                    displayResult(data.analysis, data.score);
+                const res = await fetch('/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('chatSection').classList.remove('hidden');
+                    document.getElementById('resText').innerText = data.analysis;
+                    document.getElementById('resScore').innerText = data.score;
                     getHistory();
-                } else { alert(data.error || "Upload failed"); }
-            } catch (e) { alert("Server error connection"); }
+                } else { alert(data.error); }
+            } catch (e) { alert("Server connection failed"); }
             finally { btn.disabled = false; btn.innerText = "Start AI Analysis"; }
-        }
-
-        function displayResult(text, score) {
-            document.getElementById('result').classList.remove('hidden');
-            document.getElementById('chatSection').classList.remove('hidden');
-            document.getElementById('resText').innerText = text;
-            document.getElementById('resScore').innerText = score;
-            window.scrollTo({ top: 400, behavior: 'smooth' });
         }
 
         async function getHistory() {
             const res = await fetch('/history');
             const data = await res.json();
             currentHistory = data;
-
-            if (data.length > 0) {
-                renderChart(data);
-                renderHistoryList(data);
-            }
+            renderChart(data);
+            const list = document.getElementById('historyList');
+            list.innerHTML = data.map((r, i) => `
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border dark:border-slate-700">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
+                        <span>${r.date}</span>
+                        <span class="text-blue-500">SCORE: ${r.score}</span>
+                    </div>
+                    <button onclick="viewReport(${i})" class="w-full bg-white dark:bg-slate-800 py-2 rounded-xl text-xs font-bold border dark:border-slate-600">View Report</button>
+                </div>
+            `).join('');
         }
 
         function renderChart(data) {
             const ctx = document.getElementById('chart').getContext('2d');
-            const isDark = document.documentElement.classList.contains('dark');
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.map(r => r.date).reverse(),
-                    datasets: [{
-                        label: 'Health Score',
-                        data: data.map(r => r.score).reverse(),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 4
-                    }]
+                    datasets: [{ label: 'Health Score', data: data.map(r => r.score).reverse(), borderColor: '#3b82f6', tension: 0.4 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 10, grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
-        }
-
-        function renderHistoryList(data) {
-            document.getElementById('historyList').innerHTML = data.map((r, index) => `
-                <div class="group p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border dark:border-slate-700 hover:border-blue-500 transition-all">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">${r.date}</span>
-                        <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">Score: ${r.score}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="viewReport(${index})" class="flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-white border dark:border-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">View</button>
-                        <button onclick="deleteReport(${r.id})" class="p-2 text-red-400 hover:text-red-600 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </div>
-                </div>`).join('');
         }
 
         function viewReport(index) {
             const r = currentHistory[index];
-            displayResult(r.summary, r.score);
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('resText').innerText = r.summary;
+            document.getElementById('resScore').innerText = r.score;
+            window.scrollTo({ top: 400, behavior: 'smooth' });
+        }
+
+        function publishPost() {
+            const input = document.getElementById('shareInput');
+            if (!input.value.trim()) return alert("Write something first!");
+            alert("AI Creation shared successfully!");
+            input.value = "";
         }
 
         async function askAI() {
             const input = document.getElementById('chatInput');
-            const query = input.value;
-            const context = document.getElementById('resText').innerText;
-            const chatBox = document.getElementById('chatBox');
-
-            if (!query) return;
-
-            chatBox.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-md max-w-[80%] ml-auto"><b>You:</b> ${query}</div>`;
-            input.value = "";
-            chatBox.scrollTo(0, chatBox.scrollHeight);
-
-            try {
-                const res = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query, context: context })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    chatBox.innerHTML += `<div class="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none border dark:border-slate-700 text-sm shadow-sm max-w-[80%]"><b>AI:</b> ${data.answer}</div>`;
-                    chatBox.scrollTo(0, chatBox.scrollHeight);
-                }
-            } catch (e) { console.error("Chat Error"); }
-        }
-
-        async function deleteReport(id) {
-            if (confirm("Delete this permanent record?")) {
-                const res = await fetch(`/delete/${id}`, { method: 'DELETE' });
-                if (res.ok) getHistory();
-            }
+            const box = document.getElementById('chatBox');
+            if (!input.value.trim()) return;
+            box.innerHTML += `<div class="text-right ml-auto bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-xs max-w-[80%]">${input.value}</div>`;
+            const query = input.value; input.value = "";
+            const res = await fetch('/chat', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query, context: document.getElementById('resText').innerText })
+            });
+            const data = await res.json();
+            box.innerHTML += `<div class="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none border dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 max-w-[80%]"><b>AI:</b> ${data.answer}</div>`;
+            box.scrollTo(0, box.scrollHeight);
         }
 
         function toggleDarkMode() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('darkIcon').innerText = isDark ? "☀️" : "🌙";
+            const dark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', dark ? 'dark' : 'light');
+            document.getElementById('darkIcon').innerText = dark ? "☀️" : "🌙";
             if (myChart) getHistory();
         }
 
-        function resetDashboard() {
-            document.getElementById('file').value = "";
-            document.getElementById('result').classList.add('hidden');
-            document.getElementById('chatSection').classList.add('hidden');
-        }
-
         async function logout() { await fetch('/logout'); window.location.reload(); }
-
-        function downloadPDF() {
-            const element = document.getElementById('result');
-            html2pdf().set({ margin: 10, filename: 'Health_Report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
-        }
-
-        function shareToWhatsApp() {
-            const msg = `*Health AI Report*\nScore: ${document.getElementById('resScore').innerText}/10\n\n${document.getElementById('resText').innerText}`;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        }
+        function downloadPDF() { html2pdf().from(document.getElementById('result')).save('Health_Report.pdf'); }
     </script>
 </body>
 
