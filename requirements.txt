@@ -6,3 +6,4 @@ reportlab
 gunicorn
 flask-sqlalchemy
 flask-login
+openai
