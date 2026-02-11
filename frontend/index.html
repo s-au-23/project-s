@@ -352,18 +352,41 @@
             window.scrollTo({ top: 400, behavior: 'smooth' });
         }
 
+
         async function askAI() {
             const input = document.getElementById('chatInput');
             const box = document.getElementById('chatBox');
+
             if (!input.value.trim()) return;
-            box.innerHTML += `<div class="ml-auto bg-slate-900 text-white p-4 rounded-[1.5rem] rounded-tr-none text-xs max-w-[80%]">${input.value}</div>`;
-            const q = input.value; input.value = "";
-            const res = await fetch('/chat', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: q, context: document.getElementById('resText').innerText })
-            });
-            const d = await res.json();
-            box.innerHTML += `<div class="bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] rounded-tl-none border dark:border-slate-700 text-xs text-slate-500 max-w-[80%]"><b>AI:</b> ${d.answer}</div>`;
+
+            const userMsg = input.value;
+            box.innerHTML += `<div class="ml-auto bg-slate-900 text-white p-4 rounded-[1.5rem] rounded-tr-none text-xs max-w-[80%]">${userMsg}</div>`;
+
+            input.value = "";
+            box.scrollTo(0, box.scrollHeight);
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: userMsg,
+                        context: document.getElementById('resText').innerText
+                    })
+                });
+
+                const d = await res.json();
+
+                if (res.ok) {
+
+                    box.innerHTML += `<div class="bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] rounded-tl-none border dark:border-slate-700 text-xs text-slate-500 max-w-[80%]"><b>AI:</b> ${d.reply}</div>`;
+                } else {
+                    box.innerHTML += `<div class="bg-red-50 text-red-500 p-4 rounded-[1.5rem] text-xs max-w-[80%]"><b>Error:</b> ${d.reply || "Something went wrong"}</div>`;
+                }
+            } catch (error) {
+                box.innerHTML += `<div class="bg-red-50 text-red-500 p-4 rounded-[1.5rem] text-xs max-w-[80%]"><b>Error:</b> Could not connect to server.</div>`;
+            }
+
             box.scrollTo(0, box.scrollHeight);
         }
 

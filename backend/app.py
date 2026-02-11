@@ -22,7 +22,6 @@ frontend_templates = os.path.abspath(os.path.join(base_dir, "..", "frontend"))
 app = Flask(__name__)
 CORS(app)
 
-# SETTING UP MULTIPLE TEMPLATE LOCATIONS
 app.jinja_loader = ChoiceLoader([
     FileSystemLoader(backend_templates),
     FileSystemLoader(frontend_templates)
@@ -35,17 +34,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- API KEY DEBUGGER ---
+api_key = os.getenv("OPENROUTER_API_KEY")
+if not api_key:
+    print("❌ ERROR: OPENROUTER_API_KEY is missing in .env file!")
+else:
+    print(f"✅ API Key Loaded: {api_key[:10]}********")
+
 # --- OPENROUTER SETUP ---
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"), 
+    api_key=api_key, 
     default_headers={
-        "HTTP-Referer": "http://localhost:5000",
+        "HTTP-Referer": "http://127.0.0.1:5000",
         "X-Title": "Project-G Health AI",
     }
 )
 
-# --- LOGIN MANAGER ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'home'
@@ -70,21 +75,51 @@ class Post(db.Model):
     content = db.Column(db.Text)
     date = db.Column(db.String(20))
 
+class Feedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    username = db.Column(db.String(80))
+    message = db.Column(db.Text, nullable=False)
+    date = db.Column(db.String(20))
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+# --- NEW CHATBOT ROUTE ---
+@app.route('/chat', methods=['POST'])
+@login_required
+def chat_ai():
+    data = request.json
+    user_message = data.get("message")
+    
+    if not user_message:
+        return jsonify({"reply": "I didn't receive any message."}), 400
+
+    try:
+        response = client.chat.completions.create(
+            model="google/gemini-2.0-flash-001",
+            messages=[
+                {"role": "system", "content": "You are a helpful medical assistant for Project-G. Keep answers concise."},
+                {"role": "user", "content": user_message}
+            ]
+        )
+        return jsonify({"reply": response.choices[0].message.content})
+    except Exception as e:
+        print(f"Chat Error: {str(e)}")
+        if "401" in str(e):
+            return jsonify({"reply": "API Key error. Please check your OpenRouter Key."}), 500
+        return jsonify({"reply": "Sorry, I am facing some technical issues."}), 500
 
 # --- CORE USER ROUTES ---
 
 @app.route('/')
 def home():
-    """Renders main dashboard."""
     name = current_user.username if current_user.is_authenticated else None
     return render_template('index.html', name=name)
 
 @app.route('/register', methods=['POST'])
 def register():
-    """Handles new user registration."""
     data = request.json
     if User.query.filter_by(username=data.get('username')).first():
         return jsonify({"error": "User already exists"}), 400
@@ -97,7 +132,6 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Handles user login."""
     data = request.json
     user = User.query.filter_by(username=data.get('username')).first()
     if user and check_password_hash(user.password, data.get('password')):
@@ -108,7 +142,6 @@ def login():
 @app.route('/history')
 @login_required
 def history():
-    """English Comment: Fetch history and health trends for the logged-in user."""
     reports = Report.query.filter_by(user_id=current_user.id).order_by(Report.id.asc()).all()
     return jsonify([{
         "id": r.id, 
@@ -120,7 +153,6 @@ def history():
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
-    """AI Medical Report analysis logic."""
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     
@@ -162,7 +194,7 @@ def upload():
             )
             analysis = response.choices[0].message.content
 
-        score_match = re.search(r'Score:\s*(\d+)', analysis)
+        score_match = re.search(r'Score:\s*(\d+)', analysis, re.IGNORECASE)
         if score_match:
             score = int(score_match.group(1))
         
@@ -177,18 +209,18 @@ def upload():
         return jsonify({"analysis": analysis, "score": score})
 
     except Exception as e:
+        db.session.rollback()
+        print(f"Upload Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/get-posts')
 def get_posts():
-    """Get community posts."""
     posts = Post.query.order_by(Post.id.desc()).all()
     return jsonify([{"username": p.username, "content": p.content, "date": p.date} for p in posts])
 
 @app.route('/create-post', methods=['POST'])
 @login_required
 def create_post():
-    """Create new community post."""
     data = request.json
     new_post = Post(
         user_id=current_user.id,
@@ -202,7 +234,6 @@ def create_post():
 
 @app.route('/logout')
 def logout():
-    """Clear user session."""
     logout_user()
     return jsonify({"message": "Logged out"}), 200
 
@@ -211,16 +242,14 @@ def logout():
 @app.route('/my-secret-dashboard-237')
 @login_required
 def admin_panel():
-    """English Comment: Show admin dashboard only for 'admin' user."""
     if current_user.username.lower().strip() == 'admin':
         return render_template('admin.html')
     else:
-        return f"<h1>Access Denied</h1><p>You are logged in as '{current_user.username}'. Please login as 'admin'.</p>", 403
+        return f"<h1>Access Denied</h1><p>Logged in as '{current_user.username}'. Please login as 'admin'.</p>", 403
 
 @app.route('/api/admin/stats', methods=['GET'])
 @login_required
 def get_admin_stats():
-    """English Comment: Fetches global stats for the admin panel."""
     if current_user.username.lower().strip() != 'admin':
         return jsonify({"error": "Unauthorized"}), 403
     
@@ -228,6 +257,7 @@ def get_admin_stats():
         "total_users": User.query.count(),
         "total_reports": Report.query.count(),
         "total_posts": Post.query.count(),
+        "total_feedbacks": Feedback.query.count(),
         "users": [{"id": u.id, "username": u.username} for u in User.query.all()]
     }
     return jsonify(data), 200
@@ -235,7 +265,6 @@ def get_admin_stats():
 @app.route('/api/admin/posts', methods=['GET'])
 @login_required
 def get_admin_posts():
-    """English Comment: Admin moderation view for all posts."""
     if current_user.username.lower().strip() != 'admin':
         return jsonify({"error": "Unauthorized"}), 403
     posts = Post.query.order_by(Post.id.desc()).all()
@@ -244,10 +273,9 @@ def get_admin_posts():
 @app.route('/api/admin/delete-post/<int:post_id>', methods=['DELETE'])
 @login_required
 def delete_post_admin(post_id):
-    """English Comment: Allows admin to remove any post."""
     if current_user.username.lower().strip() != 'admin':
         return jsonify({"error": "Unauthorized"}), 403
-    post = Post.query.get(post_id)
+    post = db.session.get(Post, post_id)
     if post:
         db.session.delete(post)
         db.session.commit()
@@ -257,7 +285,6 @@ def delete_post_admin(post_id):
 @app.route('/api/admin/user-reports/<int:user_id>', methods=['GET'])
 @login_required
 def get_user_reports_admin(user_id):
-    """English Comment: Admin view of a specific user's health history."""
     if current_user.username.lower().strip() != 'admin':
         return jsonify({"error": "Unauthorized"}), 403
     reports = Report.query.filter_by(user_id=user_id).order_by(Report.id.desc()).all()
@@ -267,6 +294,32 @@ def get_user_reports_admin(user_id):
         "summary": r.summary, 
         "date": r.date
     } for r in reports])
+
+@app.route('/api/send-feedback', methods=['POST'])
+@login_required
+def send_feedback():
+    data = request.json
+    new_fb = Feedback(
+        user_id=current_user.id,
+        username=current_user.username,
+        message=data.get('message'),
+        date=datetime.now().strftime("%d %b, %H:%M")
+    )
+    db.session.add(new_fb)
+    db.session.commit()
+    return jsonify({"message": "Feedback received!"})
+
+@app.route('/api/admin/feedbacks', methods=['GET'])
+@login_required
+def get_feedbacks_admin():
+    if current_user.username.lower().strip() != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    feedbacks = Feedback.query.order_by(Feedback.id.desc()).all()
+    return jsonify([{
+        "username": f.username,
+        "message": f.message,
+        "date": f.date
+    } for f in feedbacks])
 
 # --- START SERVER ---
 if __name__ == '__main__':
