@@ -51,7 +51,8 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users_table'  
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+   
+    password = db.Column(db.String(250), nullable=False)
 
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
