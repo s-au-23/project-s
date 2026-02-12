@@ -32,22 +32,23 @@ database_url = os.getenv("DATABASE_URL")
  # --- DATABASE CONNECTION FORCE FIX ---
 raw_uri = os.getenv("DATABASE_URL", "sqlite:///lab_reports.db")
 
-if raw_uri.startswith("postgres://"):
-    database_url = raw_uri.replace("postgres://", "postgresql://", 1)
+# --- DATABASE CONFIGURATION ---
+database_url = os.getenv("DATABASE_URL")
+
+if database_url:
+  
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    database_url = raw_uri
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-
-# --- CONFIGURATION ---
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key_123')
-
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://health_db_4wom_user:root@ipostgresql:5000//health_db_4wom_user:nnyHjxEEHEmp0p9HqONqwWS4TbTGTc8s@dpg-d66maesr85hc739po5u0-a/health_db_4wom"
+    
+    print("⚠️ DATABASE_URL not found, using local SQLite...")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lab_reports.db'
+    # जुनी ओळ काढून ही टाका:
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-123-xyz')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
-
 try:
     with app.app_context():
         
@@ -108,7 +109,7 @@ class Feedback(db.Model):
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-# --- ROUTES --- (बाकीचे सर्व तसेच ठेवले आहेत)
+# --- ROUTES --- 
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat_ai():
