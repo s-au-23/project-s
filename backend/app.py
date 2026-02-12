@@ -31,19 +31,18 @@ database_url = os.getenv("DATABASE_URL")
 
  # --- DATABASE CONNECTION FORCE FIX ---
 raw_uri = os.getenv("DATABASE_URL", "sqlite:///lab_reports.db")
-
 # --- DATABASE CONFIGURATION ---
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
-  
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    
-    print("⚠️ DATABASE_URL not found, using local SQLite...")
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lab_reports.db'
+   
+    db_path = os.path.join(base_dir, 'lab_reports.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    print(f"⚠️ Using local SQLite at: {db_path}")
   
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-123-xyz')
 
