@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - HealthReport AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden p-8">
+        <div class="text-center mb-8">
+            <h1 id="authTitle" class="text-3xl font-bold text-blue-600">Welcome Back</h1>
+            <p id="authSubtitle" class="text-gray-500 mt-2">Login to analyze your reports</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" id="username"
+                    class="w-full mt-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password"
+                    class="w-full mt-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+
+            <button onclick="handleAuth()" id="authBtn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95">
+                Login
+            </button>
+        </div>
+
+        <p class="mt-6 text-center text-sm text-gray-600">
+            <span id="toggleText">Don't have an account?</span>
+            <button onclick="toggleMode()" class="text-blue-600 font-bold hover:underline">Click here</button>
+        </p>
+    </div>
+
+    <script>
+        let isLogin = true;
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('authTitle').innerText = isLogin ? "Welcome Back" : "Create Account";
+            document.getElementById('authSubtitle').innerText = isLogin ? "Login to analyze your reports" : "Join us for better health insights";
+            document.getElementById('authBtn').innerText = isLogin ? "Login" : "Register";
+            document.getElementById('toggleText').innerText = isLogin ? "Don't have an account?" : "Already have an account?";
+        }
+
+        async function handleAuth() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const endpoint = isLogin ? '/login' : '/register';
+
+            if (!user || !pass) return alert("Please fill all fields");
+
+            try {
+                const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                    if (isLogin) {
+                        // Redirect to main analysis page
+                        window.location.href = "/";
+                    } else {
+                        toggleMode();
+                    }
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert("Server connection failed!");
+            }
+        }
+        if (response.ok) {
+            // Save username locally so we can use it immediately
+            localStorage.setItem('username', user);
+            alert(data.message);
+            window.location.href = "/";
+        }
+    </script>
+</body>
+
+</html>

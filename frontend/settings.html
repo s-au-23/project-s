@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - HealthReport AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-6">
+
+    <nav class="w-full max-w-2xl flex justify-between items-center mb-8">
+        <a href="/" class="text-blue-600 font-bold flex items-center gap-2 hover:underline">← Back to Dashboard</a>
+        <h1 class="font-bold text-slate-800 text-xl">Account Settings</h1>
+    </nav>
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
+        <div class="text-center mb-8">
+            <div
+                class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+                {{ name[0].upper() }}
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">{{ name }}</h2>
+            <p class="text-slate-500 text-sm">Manage your security and profile</p>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">New Password</label>
+                <input type="password" id="newPassword" placeholder="••••••••"
+                    class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <p class="text-xs text-slate-400 mt-2">Enter at least 6 characters</p>
+            </div>
+
+            <button onclick="updatePassword()" id="updateBtn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-95">
+                Update Password
+            </button>
+
+            <div class="border-t pt-6">
+                <p class="text-xs text-center text-slate-400 mb-4">Warning: This action is permanent</p>
+                <button onclick="deleteAccount()"
+                    class="w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all border border-red-100">
+                    🗑️ Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function updatePassword() {
+            const passwordField = document.getElementById('newPassword');
+            const password = passwordField.value;
+            const btn = document.getElementById('updateBtn');
+
+            if (password.length < 6) return alert("Please enter a password with at least 6 characters.");
+
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+
+            try {
+                const response = await fetch('/update-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("✅ " + data.message);
+                    passwordField.value = ""; // Clear the field
+                } else {
+                    alert("❌ " + (data.error || "Failed to update password"));
+                }
+            } catch (err) {
+                alert("Server connection error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Update Password";
+            }
+        }
+
+        async function deleteAccount() {
+            // Two-step confirmation for safety
+            const firstConfirm = confirm("Are you sure? This will delete all your reports forever!");
+            if (!firstConfirm) return;
+
+            const secondConfirm = confirm("FINAL WARNING: Your data cannot be recovered. Proceed?");
+            if (!secondConfirm) return;
+
+            try {
+                const response = await fetch('/delete-account', { method: 'POST' });
+                if (response.ok) {
+                    alert("Account Deleted. Goodbye!");
+                    window.location.href = '/auth';
+                } else {
+                    const data = await response.json();
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                alert("Server error during deletion.");
+            }
+        }
+    </script>
+</body>
+
+</html>
