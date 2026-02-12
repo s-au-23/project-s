@@ -42,8 +42,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 # --- CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key_123')
 
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://health_db_4wom_user:root@internal-host-url:5432/health_db"
 
-#app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///lab_reports.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
