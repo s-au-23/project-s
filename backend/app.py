@@ -79,27 +79,28 @@ login_manager.login_view = 'home'
 
 # --- DATABASE MODELS ---
 class User(UserMixin, db.Model):
+    __tablename__ = 'users_table'  
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
 
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'))
     summary = db.Column(db.Text)
     score = db.Column(db.Integer)
     date = db.Column(db.String(20))
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'))
     username = db.Column(db.String(80)) 
     content = db.Column(db.Text)
     date = db.Column(db.String(20))
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'))
     username = db.Column(db.String(80))
     message = db.Column(db.Text, nullable=False)
     date = db.Column(db.String(20))
