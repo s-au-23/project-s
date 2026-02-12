@@ -27,57 +27,24 @@ app.jinja_loader = ChoiceLoader([
     FileSystemLoader(frontend_templates)
 ])
 
-database_url = os.getenv("DATABASE_URL")
-
- # --- DATABASE CONNECTION FORCE FIX ---
-raw_uri = os.getenv("DATABASE_URL", "sqlite:///lab_reports.db")
 # --- DATABASE CONFIGURATION ---
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
+  
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-   
+  
     db_path = os.path.join(base_dir, 'lab_reports.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     print(f"⚠️ Using local SQLite at: {db_path}")
-  
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-123-xyz')
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
-with app.app_context():
-        db.create_all()
-        print("✅ DATABASE CONNECTED SUCCESSFULLY!")
-try:
-    
-        db.session.execute(db.text('SELECT 1')) 
-        
-except Exception as e:
-    print(f"❌ DATABASE CONNECTION ERROR: {str(e)}")
-
-# --- API KEY DEBUGGER ---
-api_key = os.getenv("OPENROUTER_API_KEY")
-if not api_key:
-    print("❌ ERROR: OPENROUTER_API_KEY is missing!")
-else:
-    print(f"✅ API Key Loaded: {api_key[:10]}********")
-
-# --- OPENROUTER SETUP ---
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=api_key, 
-    default_headers={
-        "HTTP-Referer": "http://127.0.0.1:5000",
-        "X-Title": "Project-G Health AI",
-    }
-)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'home'
 
 # --- DATABASE MODELS ---
 class User(UserMixin, db.Model):
@@ -106,6 +73,32 @@ class Feedback(db.Model):
     username = db.Column(db.String(80))
     message = db.Column(db.Text, nullable=False)
     date = db.Column(db.String(20))
+
+# --- IMPORTANT: CREATE TABLES FOR GUNICORN ---
+
+
+
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ DATABASE TABLES CREATED/VERIFIED!")
+    except Exception as e:
+        print(f"❌ DATABASE ERROR: {str(e)}")
+
+# --- OPENROUTER SETUP ---
+api_key = os.getenv("OPENROUTER_API_KEY")
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key, 
+    default_headers={
+        "HTTP-Referer": "http://127.0.0.1:5000",
+        "X-Title": "Project-G Health AI",
+    }
+)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'home'
 
 @login_manager.user_loader
 def load_user(user_id):
