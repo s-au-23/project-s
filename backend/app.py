@@ -26,6 +26,10 @@ app.jinja_loader = ChoiceLoader([
     FileSystemLoader(backend_templates),
     FileSystemLoader(frontend_templates)
 ])
+uri = os.getenv("DATABASE_URL")
+
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
 
 # --- CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
