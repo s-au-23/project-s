@@ -48,11 +48,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-123-x
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-try:
-    with app.app_context():
+with app.app_context():
         db.create_all()
-        db.session.execute(db.text('SELECT 1')) 
         print("✅ DATABASE CONNECTED SUCCESSFULLY!")
+try:
+    
+        db.session.execute(db.text('SELECT 1')) 
+        
 except Exception as e:
     print(f"❌ DATABASE CONNECTION ERROR: {str(e)}")
 
