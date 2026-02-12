@@ -48,6 +48,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+try:
+    with app.app_context():
+        
+        db.session.execute(db.text('SELECT 1'))
+        print("✅ DATABASE CONNECTED SUCCESSFULLY!")
+except Exception as e:
+    print(f"❌ DATABASE CONNECTION ERROR: {str(e)}")
+
 # --- API KEY DEBUGGER ---
 api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:
