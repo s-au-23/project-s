@@ -52,7 +52,7 @@ db = SQLAlchemy(app)
 try:
     with app.app_context():
         db.create_all()
-        db.session.execute(db.text('SELECT 1'))
+        db.session.execute(db.text('SELECT 1')) 
         print("✅ DATABASE CONNECTED SUCCESSFULLY!")
 except Exception as e:
     print(f"❌ DATABASE CONNECTION ERROR: {str(e)}")
