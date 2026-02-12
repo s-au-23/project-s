@@ -18,7 +18,6 @@ from jinja2 import ChoiceLoader, FileSystemLoader
 base_dir = os.path.dirname(os.path.abspath(__file__))
 backend_templates = os.path.join(base_dir, "templates")
 frontend_templates = os.path.abspath(os.path.join(base_dir, "..", "frontend"))
-
 app = Flask(__name__)
 CORS(app)
 
@@ -26,14 +25,19 @@ app.jinja_loader = ChoiceLoader([
     FileSystemLoader(backend_templates),
     FileSystemLoader(frontend_templates)
 ])
+
+
 uri = os.getenv("DATABASE_URL")
+
 
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
 # --- CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///lab_reports.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///lab_reports.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
