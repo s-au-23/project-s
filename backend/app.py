@@ -29,14 +29,21 @@ app.jinja_loader = ChoiceLoader([
 
 database_url = os.getenv("DATABASE_URL")
 
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+ # --- DATABASE CONNECTION FORCE FIX ---
+raw_uri = os.getenv("DATABASE_URL", "sqlite:///lab_reports.db")
+
+if raw_uri.startswith("postgres://"):
+    database_url = raw_uri.replace("postgres://", "postgresql://", 1)
+else:
+    database_url = raw_uri
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 # --- CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key_123')
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///lab_reports.db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///lab_reports.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
