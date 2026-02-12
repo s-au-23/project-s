@@ -42,7 +42,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 # --- CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key_123')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://health_db_4wom_user:root@ipostgresql://health_db_4wom_user:nnyHjxEEHEmp0p9HqONqwWS4TbTGTc8s@dpg-d66maesr85hc739po5u0-a/health_db_4wom"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://health_db_4wom_user:root@ipostgresql:5000//health_db_4wom_user:nnyHjxEEHEmp0p9HqONqwWS4TbTGTc8s@dpg-d66maesr85hc739po5u0-a/health_db_4wom"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
