@@ -44,14 +44,14 @@ else:
     
     print("⚠️ DATABASE_URL not found, using local SQLite...")
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lab_reports.db'
-  
+    # जुनी ओळ काढून ही टाका:
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-123-xyz')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 try:
     with app.app_context():
-        db.create_all()
+        
         db.session.execute(db.text('SELECT 1'))
         print("✅ DATABASE CONNECTED SUCCESSFULLY!")
 except Exception as e:
