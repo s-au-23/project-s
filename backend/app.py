@@ -134,10 +134,17 @@ def home():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    if User.query.filter_by(username=data.get('username')).first():
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and Password required"}), 400
+
+    if User.query.filter_by(username=username).first():
         return jsonify({"error": "User already exists"}), 400
-    hashed_password = generate_password_hash(data.get('password'))
-    new_user = User(username=data.get('username'), password=hashed_password)
+
+    hashed_password = generate_password_hash(password)
+    new_user = User(username=username, password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"message": "Registration successful"}), 201
