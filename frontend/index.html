@@ -766,6 +766,16 @@
         async function logout() { await fetch('/logout'); window.location.reload(); }
 
         function downloadPDF() { html2pdf().from(document.getElementById('result')).save('Medical_Report.pdf'); }
+        window.onload = () => {
+            const name = "{{ name }}";
+            // If name is "None" (Flask default for empty), show Auth
+            if (name && name !== "None" && name !== "") {
+                showDash();
+                loadFeed();
+            } else {
+                showAuth();
+            }
+        };
 
     </script>
 

@@ -264,6 +264,30 @@ def send_feedback():
     db.session.add(new_fb)
     db.session.commit()
     return jsonify({"message": "Feedback received!"})
+@app.route('/update-password', methods=['POST'])
+@login_required
+def update_password():
+    data = request.json
+    new_password = data.get('password')
+    if not new_password or len(new_password) < 6:
+        return jsonify({"error": "Password too short"}), 400
+    
+    current_user.password = generate_password_hash(new_password)
+    db.session.commit()
+    return jsonify({"message": "Password updated successfully"}), 200
+
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    # Delete user's reports and posts first to avoid foreign key errors
+    Report.query.filter_by(user_id=current_user.id).delete()
+    Post.query.filter_by(user_id=current_user.id).delete()
+    
+    user = User.query.get(current_user.id)
+    db.session.delete(user)
+    db.session.commit()
+    logout_user()
+    return jsonify({"message": "Account deleted"}), 200
 
 # --- START APP ---
 if __name__ == '__main__':
