@@ -244,14 +244,14 @@ def logout():
 @app.route('/my-secret-dashboard-237')
 @login_required
 def admin_panel():
-    if current_user.username.lower().strip() == 'admin':
+    if current_user.username.lower().strip() == 'Gauri':
         return render_template('admin.html')
     return "<h1>Access Denied</h1>", 403
 
 @app.route('/api/admin/stats', methods=['GET'])
 @login_required
 def get_admin_stats():
-    if current_user.username.lower().strip() != 'admin':
+    if current_user.username.lower().strip() != 'Gauri':
         return jsonify({"error": "Unauthorized"}), 403
     return jsonify({
         "total_users": User.query.count(),
