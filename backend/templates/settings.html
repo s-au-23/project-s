@@ -25,30 +25,63 @@
             <p class="text-slate-500 text-sm">Manage your security and profile</p>
         </div>
 
-        <div class="space-y-6">
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">New Password</label>
-                <input type="password" id="newPassword" placeholder="••••••••"
-                    class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <p class="text-xs text-slate-400 mt-2">Enter at least 6 characters</p>
-            </div>
+       <div class="space-y-6">
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">New Username</label>
+        <input type="text" id="newUsername" placeholder="{{ name }}"
+            class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+    </div>
 
-            <button onclick="updatePassword()" id="updateBtn"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-95">
-                Update Password
-            </button>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">New Password</label>
+        <input type="password" id="newPassword" placeholder="••••••••"
+            class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        <p class="text-xs text-slate-400 mt-2">Enter at least 6 characters</p>
+    </div>
 
-            <div class="border-t pt-6">
-                <p class="text-xs text-center text-slate-400 mb-4">Warning: This action is permanent</p>
-                <button onclick="deleteAccount()"
-                    class="w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all border border-red-100">
-                    🗑️ Delete Account
-                </button>
-            </div>
-        </div>
+    <button onclick="updateProfile()" id="updateBtn"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-95">
+        Save Changes
+    </button>
+    ...
     </div>
 
     <script>
+        async function updateProfile() {
+            const usernameField = document.getElementById('newUsername');
+            const passwordField = document.getElementById('newPassword');
+            const btn = document.getElementById('updateBtn');
+
+            const username = usernameField.value;
+            const password = passwordField.value;
+
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+
+            try {
+                const response = await fetch('/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("✅ " + data.message);
+                    usernameField.value = "";
+                    passwordField.value = "";
+                } else {
+                    alert("❌ " + (data.error || "Failed to update profile"));
+                }
+            } catch (err) {
+                alert("Server connection error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save Changes";
+            }
+        }
+
         async function updatePassword() {
             const passwordField = document.getElementById('newPassword');
             const password = passwordField.value;

@@ -163,6 +163,11 @@ def login():
 def history():
     reports = Report.query.filter_by(user_id=current_user.id).order_by(Report.id.asc()).all()
     return jsonify([{"id": r.id, "score": r.score, "summary": r.summary, "date": r.date} for r in reports])
+@app.route('/settings')
+@login_required
+def settings():
+    # 'name' is used by your settings.html for the profile circle initial
+    return render_template('settings.html', name=current_user.username)
 
 @app.route('/upload', methods=['POST'])
 @login_required
@@ -288,6 +293,17 @@ def delete_account():
     db.session.commit()
     logout_user()
     return jsonify({"message": "Account deleted"}), 200
+@app.route('/update-profile', methods=['POST']) # Changed from /update-password to /update-profile
+@login_required
+def update_profile():
+    data = request.json
+    new_username = data.get('username')
+    new_password = data.get('password')
+    
+    # ... rest of your code ...
+    current_user.username = new_username # etc.
+    db.session.commit()
+    return jsonify({"message": "Profile updated successfully"}), 200
 
 # --- START APP ---
 if __name__ == '__main__':
