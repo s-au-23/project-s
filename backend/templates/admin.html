@@ -109,27 +109,36 @@
     </div>
 
     <script>
-        const API_BASE = "/api/admin";
+        const API_BASE = "/api/Gauri"; 
 
         async function fetchStats() {
             try {
                 const response = await fetch(`${API_BASE}/stats`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
-                document.getElementById('totalUsers').innerText = data.total_users;
-                document.getElementById('totalReports').innerText = data.total_reports;
-                document.getElementById('totalPosts').innerText = data.total_posts;
+                
+                document.getElementById('totalUsers').innerText = data.total_users || 0;
+                document.getElementById('totalReports').innerText = data.total_reports || 0;
+                document.getElementById('totalPosts').innerText = data.total_posts || 0;
 
                 const table = document.getElementById('userTableBody');
-                table.innerHTML = data.users.map(u => `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-                        <td class="py-5 px-4 font-bold text-slate-400">#0${u.id}</td>
-                        <td class="py-5 px-4 font-bold text-slate-800">${u.username}</td>
-                        <td class="py-5 px-4 text-right">
-                            <button onclick="viewUserHistory(${u.id}, '${u.username}')" class="text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">View Medical History</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) { console.error("Stats Error:", error); }
+                if (data.users && data.users.length > 0) {
+                    table.innerHTML = data.users.map(u => `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                            <td class="py-5 px-4 font-bold text-slate-400">#0${u.id}</td>
+                            <td class="py-5 px-4 font-bold text-slate-800">${u.username}</td>
+                            <td class="py-5 px-4 text-right">
+                                <button onclick="viewUserHistory(${u.id}, '${u.username}')" class="text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">View Medical History</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    table.innerHTML = '<tr><td colspan="3" class="text-center py-10 text-slate-400">No users found</td></tr>';
+                }
+            } catch (error) { 
+                console.error("Stats Error:", error);
+                document.getElementById('totalUsers').innerText = "!";
+            }
         }
 
         async function fetchPosts() {
@@ -137,7 +146,7 @@
                 const response = await fetch(`${API_BASE}/posts`);
                 const posts = await response.json();
                 const container = document.getElementById('adminPostList');
-                if (posts.length === 0) {
+                if (!posts || posts.length === 0) {
                     container.innerHTML = '<p class="text-slate-400 p-10 text-center col-span-2">No community posts available.</p>';
                     return;
                 }
@@ -158,7 +167,7 @@
                 const response = await fetch(`${API_BASE}/feedbacks`);
                 const feedbacks = await response.json();
                 const container = document.getElementById('feedbackList');
-                if (feedbacks.length === 0) {
+                if (!feedbacks || feedbacks.length === 0) {
                     container.innerHTML = '<p class="text-center py-20 text-slate-400">No feedback received yet.</p>';
                     return;
                 }
@@ -184,7 +193,7 @@
             try {
                 const response = await fetch(`${API_BASE}/user-reports/${userId}`);
                 const reports = await response.json();
-                if (reports.length === 0) {
+                if (!reports || reports.length === 0) {
                     content.innerHTML = '<p class="text-center py-10 text-slate-400">No reports found.</p>';
                     return;
                 }
@@ -223,8 +232,8 @@
             document.getElementById('pageTitle').innerText = titles[tab];
 
             if (tab === 'feed') fetchPosts();
-            if (tab === 'feedback') fetchFeedbacks();
-            if (tab === 'stats') fetchStats();
+            else if (tab === 'feedback') fetchFeedbacks();
+            else if (tab === 'stats') fetchStats();
         }
 
         function refreshData() {
@@ -233,8 +242,10 @@
             if (!document.getElementById('feedbackSection').classList.contains('hidden')) fetchFeedbacks();
         }
 
-        window.onload = fetchStats;
+        // Improved listener to ensure elements exist before script runs
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchStats();
+        });
     </script>
 </body>
-
 </html>

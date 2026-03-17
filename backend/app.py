@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv() 
 import re
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,14 +29,11 @@ app.jinja_loader = ChoiceLoader([
 
 # --- DATABASE CONFIGURATION ---
 database_url = os.getenv("DATABASE_URL")
-
 if database_url:
-  
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-  
     db_path = os.path.join(base_dir, 'lab_reports.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     print(f"⚠️ Using local SQLite at: {db_path}")
@@ -51,7 +48,6 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users_table'  
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-   
     password = db.Column(db.String(250), nullable=False)
 
 class Report(db.Model):
@@ -75,17 +71,6 @@ class Feedback(db.Model):
     message = db.Column(db.Text, nullable=False)
     date = db.Column(db.String(20))
 
-# --- IMPORTANT: CREATE TABLES FOR GUNICORN ---
-
-
-
-with app.app_context():
-    try:
-        db.create_all()
-        print("✅ DATABASE TABLES CREATED/VERIFIED!")
-    except Exception as e:
-        print(f"❌ DATABASE ERROR: {str(e)}")
-
 # --- OPENROUTER SETUP ---
 api_key = os.getenv("OPENROUTER_API_KEY")
 client = OpenAI(
@@ -106,6 +91,40 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 # --- ROUTES --- 
+@app.route('/')
+def home():
+    name = current_user.username if current_user.is_authenticated else None
+    return render_template('index.html', name=name)
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({"error": "Username and Password required"}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "User already exists"}), 400
+    hashed_password = generate_password_hash(password)
+    new_user = User(username=username, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"message": "Registration successful"}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    user = User.query.filter_by(username=data.get('username')).first()
+    if user and check_password_hash(user.password, data.get('password')):
+        login_user(user, remember=True)
+        return jsonify({"message": "Logged in successfully"}), 200
+    return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out"}), 200
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat_ai():
@@ -123,50 +142,17 @@ def chat_ai():
         )
         return jsonify({"reply": response.choices[0].message.content})
     except Exception as e:
-        print(f"Chat Error: {str(e)}")
         return jsonify({"reply": "Sorry, I am facing some technical issues."}), 500
-
-@app.route('/')
-def home():
-    name = current_user.username if current_user.is_authenticated else None
-    return render_template('index.html', name=name)
-
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({"error": "Username and Password required"}), 400
-
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "User already exists"}), 400
-
-    hashed_password = generate_password_hash(password)
-    new_user = User(username=username, password=hashed_password)
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message": "Registration successful"}), 201
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    user = User.query.filter_by(username=data.get('username')).first()
-    if user and check_password_hash(user.password, data.get('password')):
-        login_user(user, remember=True)
-        return jsonify({"message": "Logged in successfully"}), 200
-    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route('/history')
 @login_required
 def history():
     reports = Report.query.filter_by(user_id=current_user.id).order_by(Report.id.asc()).all()
     return jsonify([{"id": r.id, "score": r.score, "summary": r.summary, "date": r.date} for r in reports])
+
 @app.route('/settings')
 @login_required
 def settings():
-    # 'name' is used by your settings.html for the profile circle initial
     return render_template('settings.html', name=current_user.username)
 
 @app.route('/upload', methods=['POST'])
@@ -235,23 +221,19 @@ def create_post():
     db.session.commit()
     return jsonify({"message": "Posted!"})
 
-@app.route('/logout')
-def logout():
-    logout_user()
-    return jsonify({"message": "Logged out"}), 200
-
-# --- ADMIN ROUTES ---
+# --- ADMIN PANEL ROUTES ---
 @app.route('/my-secret-dashboard-237')
 @login_required
 def admin_panel():
-    if current_user.username.lower().strip() == 'Gauri':
+    # Authorization: Allows ID 1 OR the username Gauri
+    if current_user.id == 1 or current_user.username.lower().strip() == 'gauri':
         return render_template('admin.html')
     return "<h1>Access Denied</h1>", 403
 
-@app.route('/api/admin/stats', methods=['GET'])
+@app.route('/api/Gauri/stats', methods=['GET'])
 @login_required
 def get_admin_stats():
-    if current_user.username.lower().strip() != 'Gauri':
+    if current_user.id != 1 and current_user.username.lower().strip() != 'gauri':
         return jsonify({"error": "Unauthorized"}), 403
     return jsonify({
         "total_users": User.query.count(),
@@ -261,6 +243,43 @@ def get_admin_stats():
         "users": [{"id": u.id, "username": u.username} for u in User.query.all()]
     }), 200
 
+@app.route('/api/Gauri/posts')
+@login_required
+def admin_get_posts():
+    if current_user.id != 1 and current_user.username.lower().strip() != 'gauri':
+        return jsonify({"error": "Unauthorized"}), 403
+    posts = Post.query.all()
+    return jsonify([{"id": p.id, "username": p.username, "content": p.content, "date": p.date} for p in posts])
+
+@app.route('/api/Gauri/delete-post/<int:post_id>', methods=['DELETE'])
+@login_required
+def delete_post(post_id):
+    if current_user.id != 1 and current_user.username.lower().strip() != 'gauri':
+        return jsonify({"error": "Unauthorized"}), 403
+    post = Post.query.get(post_id)
+    if post:
+        db.session.delete(post)
+        db.session.commit()
+        return jsonify({"message": "Post deleted"}), 200
+    return jsonify({"error": "Post not found"}), 404
+
+@app.route('/api/Gauri/user-reports/<int:user_id>')
+@login_required
+def get_user_reports(user_id):
+    if current_user.id != 1 and current_user.username.lower().strip() != 'gauri':
+        return jsonify({"error": "Unauthorized"}), 403
+    reports = Report.query.filter_by(user_id=user_id).all()
+    return jsonify([{"score": r.score, "summary": r.summary, "date": r.date} for r in reports])
+
+@app.route('/api/Gauri/feedbacks')
+@login_required
+def get_feedbacks():
+    if current_user.id != 1 and current_user.username.lower().strip() != 'gauri':
+        return jsonify({"error": "Unauthorized"}), 403
+    feedbacks = Feedback.query.all()
+    return jsonify([{"username": f.username, "message": f.message, "date": f.date} for f in feedbacks])
+
+# --- USER PROFILE/FEEDBACK ROUTES ---
 @app.route('/api/send-feedback', methods=['POST'])
 @login_required
 def send_feedback():
@@ -269,48 +288,40 @@ def send_feedback():
     db.session.add(new_fb)
     db.session.commit()
     return jsonify({"message": "Feedback received!"})
-@app.route('/update-password', methods=['POST'])
-@login_required
-def update_password():
-    data = request.json
-    new_password = data.get('password')
-    if not new_password or len(new_password) < 6:
-        return jsonify({"error": "Password too short"}), 400
-    
-    current_user.password = generate_password_hash(new_password)
-    db.session.commit()
-    return jsonify({"message": "Password updated successfully"}), 200
 
-@app.route('/delete-account', methods=['POST'])
-@login_required
-def delete_account():
-    # Delete user's reports and posts first to avoid foreign key errors
-    Report.query.filter_by(user_id=current_user.id).delete()
-    Post.query.filter_by(user_id=current_user.id).delete()
-    
-    user = User.query.get(current_user.id)
-    db.session.delete(user)
-    db.session.commit()
-    logout_user()
-    return jsonify({"message": "Account deleted"}), 200
-@app.route('/update-profile', methods=['POST']) # Changed from /update-password to /update-profile
+@app.route('/update-profile', methods=['POST'])
 @login_required
 def update_profile():
     data = request.json
     new_username = data.get('username')
     new_password = data.get('password')
-    
-    # ... rest of your code ...
-    current_user.username = new_username # etc.
+    if new_username and new_username.strip():
+        existing_user = User.query.filter_by(username=new_username).first()
+        if existing_user and existing_user.id != current_user.id:
+            return jsonify({"error": "Username already taken"}), 400
+        current_user.username = new_username.strip()
+    if new_password and len(new_password) >= 6:
+        current_user.password = generate_password_hash(new_password)
     db.session.commit()
     return jsonify({"message": "Profile updated successfully"}), 200
+
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    Report.query.filter_by(user_id=current_user.id).delete()
+    Post.query.filter_by(user_id=current_user.id).delete()
+    Feedback.query.filter_by(user_id=current_user.id).delete()
+    user = User.query.get(current_user.id)
+    db.session.delete(user)
+    db.session.commit()
+    logout_user()
+    return jsonify({"message": "Account deleted"}), 200
 
 # --- START APP ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all() 
         print("🚀 Database Tables Created!")
-        port_str = os.environ.get("PORT", "5000")
-        port = int(port_str) 
     
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
